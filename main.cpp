@@ -32,7 +32,7 @@ class TargetValidator
 
 	public:
 		//minimum of 1 frames in minimumSampleRatio mandatory
-		TargetValidator(unsigned _sampleSize, double _minimumSampleRatio)
+		TargetValidator(unsigned _sampleSize, double _minimumSampleRatio, Preferences *pref)
 		{
 			minimumSampleRatio = _minimumSampleRatio;
 			frameIteration = 0u;
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 	act.sa_handler = interruptHandler;
 	sigaction(SIGINT, &act, NULL);
 
-	std::string configFile = "preferences.json";
+	std::string configFile = "/home/pi/Programming/Sahkopaja/preferences.json";
 
 	if (argc > 1)
 	{
@@ -108,13 +108,15 @@ int main(int argc, char** argv)
 
 	cv::VideoCapture cap = initCamera(&preferences);
 
-	if (debugMode)
-	{
-		//Setup video windows
-		cv::namedWindow("Video", cv::WINDOW_NORMAL);
-		cv::namedWindow("Suodatettu", cv::WINDOW_NORMAL);
-		cv::namedWindow("Tausta", cv::WINDOW_NORMAL);
-	}
+    bool graphicMode = (preferences.readInt("graphic_mode", 1) != 0);
+    
+    if (debugMode && graphicMode)
+    {
+        //Setup video windows
+        cv::namedWindow("Video", cv::WINDOW_NORMAL);
+        cv::namedWindow("Suodatettu", cv::WINDOW_NORMAL);
+        cv::namedWindow("Tausta", cv::WINDOW_NORMAL);
+    }
 
 	//Set up the thread to read frames from camera feed
 	cv::Mat _frame;
@@ -135,10 +137,13 @@ int main(int argc, char** argv)
 	cv::Mat frame;
 	int pressed;
 
-	TargetValidator validator = TargetValidator(sampleSize, minimumSampleRatio);
+	TargetValidator validator = TargetValidator(sampleSize, minimumSampleRatio, &preferences);
 	std::pair<double, double> targetLocation;
 
-	ProgramState state = RESET;
+    std::chrono::duration<int, std::milli> resetDuration(preferences.readInt("reset_duration", 5000));
+    std::chrono::system_clock::time_point resetBeginTime = std::chrono::system_clock::now();
+
+	ProgramState state = ProgramState::RESET;
 
 	//The main loop of the program
     while(keepRunning)
@@ -160,9 +165,13 @@ int main(int argc, char** argv)
 			targetX = -1.0;
 			targetY = -1.0;
 
-			if (!targetConfirmed)
+			if (std::chrono::system_clock::now() - resetBeginTime > resetDuration)
 			{
 				state = ProgramState::ACQUIRE;
+                if (debugMode)
+                {
+                    std::cout << "Entering Acquire state\n";
+                }
 			}
 		}
 		//Move to elimination phase if target is found
@@ -172,6 +181,10 @@ int main(int argc, char** argv)
 			{
 				startShooting = true;
 				state = ProgramState::ELIMINATE;
+                if (debugMode)
+                {
+                    std::cout << "Entering Eliminate state\n";
+                }
 			}
 		}
 		//Aim at the target if found
@@ -185,14 +198,19 @@ int main(int argc, char** argv)
 			if (shootingDone)
 			{
 				state = ProgramState::RESET;
+                resetBeginTime = std::chrono::system_clock::now();
 				shootingDone = false;
+                if (debugMode)
+                {
+                    std::cout << "Entering Reset state\n";
+                }
 			}
 
 			hwMutex.unlock();
 		}
 
 		//Update the windows
-		if (debugMode)
+		if (debugMode && graphicMode)
 		{
 			cv::imshow("Video", motion.getGoalFrame());
 			cv::imshow("Suodatettu", motion.getResult());

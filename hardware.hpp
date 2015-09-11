@@ -33,6 +33,8 @@ private:
 	std::chrono::system_clock::time_point servoActivationTime;
 	bool triggerServoActive;
 
+    bool _startShooting, _disableShooting;
+
 public:
 
 	//constructor initializes every servo at their centre point
@@ -101,10 +103,13 @@ public:
 		}
 		return servoPositions[servoNumber];
 	}
-	void run(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *startShooting, bool *shootingDone, bool *disableShooting);
+	void run(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *startShooting, bool *shootingDone);
 	std::thread runThread(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *startShooting, bool *shootingDone, bool *disableShooting)
 	{
-		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY, startShooting, shootingDone, disableShooting); } );
+        hardWareMutex->lock();
+        _disableShooting = *disableShooting;
+        hardWareMutex->unlock();
+		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY, startShooting, shootingDone); } );
 	}
 };
 

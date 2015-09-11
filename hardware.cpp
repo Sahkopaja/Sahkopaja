@@ -1,6 +1,6 @@
 #include "hardware.hpp"
 
-void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX, double* mainY, bool *startShooting, bool *shootingDone, bool *disableShooting)
+void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX, double* mainY, bool *startShooting, bool *shootingDone)
 {
 	//thread's main loop
 
@@ -13,30 +13,37 @@ void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX,
 		hardWareMutex->lock();
 		double targetX = *mainX;
 		double targetY = *mainY;
+        _startShooting = *startShooting;
 		hardWareMutex->unlock();
 
 		//The following block handles the trigger mechanism
-		if (!disableShooting)
-		{
-			if (triggerServoActive && std::chrono::system_clock::now() - servoActivationTime > triggerServoDuration)
-			{
-				setServoPosition(TRIGGERSERVO, calibrationLowerTrigger);
-				triggerServoActive = false;
-				hardWareMutex->lock();
-				*shootingDone = true;
-				hardWareMutex->unlock();
-			}
 
-			if (!triggerServoActive && startShooting)
-			{
-				setServoPosition(TRIGGERSERVO, calibrationUpperTrigger);
-				servoActivationTime = std::chrono::system_clock::now();
-				triggerServoActive = true;
-				hardWareMutex->lock();
-				*startShooting = false;
-				hardWareMutex->unlock();
-			}
-		}
+        //printf("%i : %i\n", (int)std::chrono::system_clock::now() - (int)servoActivationTime, (int)triggerServoDuration);
+
+        if (triggerServoActive && std::chrono::system_clock::now() - servoActivationTime > triggerServoDuration)
+        {
+            if (!_disableShooting)
+            {
+                setServoPosition(TRIGGERSERVO, calibrationLowerTrigger);
+            }
+            triggerServoActive = false;
+            hardWareMutex->lock();
+            *shootingDone = true;
+            hardWareMutex->unlock();
+        }
+
+        if (!triggerServoActive && _startShooting)
+        {
+            if (!_disableShooting)
+            {
+                setServoPosition(TRIGGERSERVO, calibrationUpperTrigger);
+            }
+            servoActivationTime = std::chrono::system_clock::now();
+            triggerServoActive = true;
+            hardWareMutex->lock();
+            *startShooting = false;
+            hardWareMutex->unlock();
+        }
 
 		//Calculate percentage values to x and y servos to based on screen coordinates
         if (targetX >= 0)
