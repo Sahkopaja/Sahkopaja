@@ -26,6 +26,9 @@ class Preferences
 				throw std::runtime_error("File " + fileName + " couldn't be opened\n");
 
 			bool parseSuccess = reader.parse(fs, root);
+
+            if (fs.is_open())
+                fs.close();
 		}
 
 		std::string readString(std::string key, std::string def)
