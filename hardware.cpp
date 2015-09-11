@@ -57,7 +57,7 @@ void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX,
         else
         {
             targetX = (calibrationUpperX + calibrationLowerX) / 2;
-            targetY = (calibrationUpperX + calibrationLowerX) / 2;
+            targetY = (calibrationUpperY + calibrationLowerY) / 2;
         }
         setServoPosition(XSERVO, (int)targetX);
 		setServoPosition(YSERVO, (int)targetY);
