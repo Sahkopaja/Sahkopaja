@@ -73,6 +73,21 @@ public:
 	//from 0 to 100.
 	bool setServoPosition(unsigned servoNumber, int percentage) {
 		if(file.is_open()) {
+
+            //Corrections based on the servo being moved
+            if (servoNumber == XSERVO)
+            {
+                percentage = 100 - percentage;
+            }
+            else if (servoNumber == YSERVO)
+            {
+                percentage = 100 - percentage;
+            }
+            else if (servoNumber == TRIGGERSERVO)
+            {
+                //Nothing ATM
+            }
+
 			file << servoNumber << "=" << percentage << "%" << std::endl;
 			return true;
 		}
