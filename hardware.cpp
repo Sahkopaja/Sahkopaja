@@ -4,36 +4,30 @@ void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX,
 {
 	//thread's main loop
 	
-	std::chrono::duration<double, std::milli> sleep_duration(5);
+	std::chrono::duration<double, std::milli> sleep_duration(200);
 	
 	while(*keepRunning) {
-		double targetX = 0.0f;
-		double targetY = 0.0f;
 		//fetches the coordinates from the main thread
 		hardWareMutex->lock();
-		targetX = *mainX;
-		targetY = *mainY;
+		double targetX = *mainX;
+		double targetY = *mainY;
 		hardWareMutex->unlock();
-		
-		double finalX = calibrationLowerX + (targetX/100 * (calibrationUpperX - calibrationLowerX));
-		double finalY = calibrationLowerY + (targetY/100 * (calibrationUpperY - calibrationLowerY));
 
-		if(finalX > maxWidth) {
-			finalX = maxWidth;
-		}
-		if(finalX < 0) {
-			finalX = 0.0f;
-		}
-		if(finalY > maxHeight) {
-			finalY = maxHeight;
-		}
-		if(finalY < 0.0f) {
-			finalY = 0.0f;
-		}
-		finalX = 100.0f*finalX/maxWidth;
-		finalY = 100.0f*finalY/maxHeight;
-		setServoPosition(XSERVO, (int)finalX);
-		setServoPosition(YSERVO, (int)finalY);
+        if (targetX >= 0)
+        {
+            targetX = targetX / maxWidth * 100;
+            targetY = targetY / maxHeight * 100;
+
+            targetX = calibrationLowerX + (targetX/100 * (calibrationUpperX - calibrationLowerX));
+            targetY = calibrationLowerY + (targetY/100 * (calibrationUpperY - calibrationLowerY));
+        }
+        else
+        {
+            targetX = 50;
+            targetY = 50;
+        }
+        setServoPosition(XSERVO, (int)targetX);
+		setServoPosition(YSERVO, (int)targetY);
 		
 		std::this_thread::sleep_for(sleep_duration);
 	}

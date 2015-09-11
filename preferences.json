@@ -9,8 +9,8 @@
 	"motion_detection_target_history" : 5,
 	"camera_frameW" : 240,
 	"camera_frameH" : 180,
-	"servo_calibration_lower_x" : 0,
-	"servo_calibration_upper_x" : 100,
-	"servo_calibration_lower_y" : 0,
-	"servo_calibration_upper_y" : 100
+	"servo_calibration_lower_x" : 40,
+	"servo_calibration_upper_x" : 60,
+	"servo_calibration_lower_y" : 40,
+	"servo_calibration_upper_y" : 60
 }

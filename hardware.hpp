@@ -17,13 +17,13 @@ class GPIOState
 private:
 	int servoPositions[SERVOAMOUNT];
 	std::ofstream file;
-	double calibrationLowerX;
-	double calibrationUpperX;
-	double calibrationLowerY;
-	double calibrationUpperY;
+	int calibrationLowerX;
+	int calibrationUpperX;
+	int calibrationLowerY;
+	int calibrationUpperY;
 
-	double maxWidth;
-	double maxHeight;
+	int maxWidth;
+	int maxHeight;
 public:
 	//calibration shift refers to the angle between the camera and
 	//the nerf gun
@@ -58,7 +58,7 @@ public:
 	//from 0 to 100.
 	bool setServoPosition(unsigned servoNumber, int percentage) {
 		if(file.is_open()) {
-			file << servoNumber << "=" << percentage << "%\n";
+			file << servoNumber << "=" << percentage << "%" << std::endl;
 			return true;
 		}
 		return false;

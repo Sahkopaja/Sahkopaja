@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     std::mutex frameMutex;
     std::thread frameThread(frameUpdate, &keepRunning, &_frame, &frameMutex, &cap);
 	
-	double targetX, targetY;
+	double targetX = -1, targetY = -1;
 	GPIOState gpio(&preferences);
 	std::mutex hwMutex;
 	std::thread hwThread = gpio.runThread(&keepRunning, &hwMutex, &targetX, &targetY);
