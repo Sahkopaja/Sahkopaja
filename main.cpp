@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 			cv::imshow("Tausta", motion.getBackground());
 		}
 
-		pressed = cv::waitKey(30);
+		pressed = cv::waitKey(1);
         if ((char)pressed == 'q') keepRunning = false;
     }
 	
