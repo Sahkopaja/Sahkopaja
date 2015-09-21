@@ -4,8 +4,7 @@
 #include <mutex>
 #include <chrono>
 
-static const int FRAME_W = 640;
-static const int FRAME_H = 480;
+#include "camera.hpp"
 
 void frameUpdate(bool *keepRunning, cv::Mat *_frame, std::mutex *_frameMutex, cv::VideoCapture *_cap)
 {
@@ -23,17 +22,7 @@ void frameUpdate(bool *keepRunning, cv::Mat *_frame, std::mutex *_frameMutex, cv
 
 int main(int argc, char** argv)
 {
-    cv::VideoCapture cap(0);
-    
-    if (!cap.isOpened())
-    {
-	    printf("Could't open the camera\n");
-        return -1;
-    }
-
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, FRAME_W);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_H);
-    
+    cv::VideoCapture cap = initCamera();    
     cv::Mat back;
     cv::Mat front;
     
