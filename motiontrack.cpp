@@ -3,19 +3,16 @@
 void MotionTrack::UpdateFrame(cv::Mat newFrame)
 {
 	cv::Mat tmpFrame = newFrame.clone();
-
-	cvtColor(tmpFrame, tmpFrame, CV_BGR2GRAY);
-
-	cv::erode(tmpFrame, tmpFrame, cv::Mat());
-	cv::dilate(tmpFrame, tmpFrame, cv::Mat());
 	
-	/* --MOG-- */
-	bgsubtract.operator()(tmpFrame, tmpFrame);
-	bgsubtract.getBackgroundImage(backGround);
+	//Simplify the frame
+	cv::Mat dilateElement = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(dilateRange, dilateRange));
+	cv::Mat erodeElement = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(erodeRange, erodeRange));
 	
-	resultFrame = tmpFrame;
+	cv::dilate(tmpFrame, tmpFrame, dilateElement);
+	cv::erode(tmpFrame, tmpFrame, erodeElement);
 
-	//cv::findContours(front, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-	//cv::drawContours(cpFrame, contours, -1, cv::Scalar(0, 0, 255), 2);
+	//Subtract the static background from the frame
+	bgsubtract->operator()(tmpFrame, resultFrame, learningRate);
+	bgsubtract->getBackgroundImage(background);
 }
 
