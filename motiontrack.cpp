@@ -1,5 +1,8 @@
 #include "motiontrack.hpp"
 #include <stdio.h>
+
+
+
 void MotionTrack::UpdateFrame(cv::Mat newFrame)
 {
 	cv::Mat tmpFrame = newFrame.clone();
@@ -29,12 +32,17 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 
 	cv::findContours( tmpFrame.clone(), contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
 
-	for (unsigned i = 0; i < contours.size(); i++)
+	if (hierarchy.size() > 0)
 	{
-		double area = cv::contourArea(contours[i], false);
-		if ( area < minArea || area > maxArea)
+		for (int i = 0; i >= 0; i = hierarchy[i][0])
 		{
-			contours.erase(contours.begin() + i);
+			cv::Moments moment = cv::moments((cv::Mat)contours[i]);
+			double area = moment.m00;
+			if ( area < minArea || area > maxArea )
+			{
+				moments.push_back(moment);
+				cv::circle(tmpFrame, cv::Point(moment.m10/area, moment.m01/area), 20, cv::Scalar(255,255),2);
+			}
 		}
 	}
 
