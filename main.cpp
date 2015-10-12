@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 
     std::thread frameThread(frameUpdate, &keepRunning, &_frame, &frameMutex, &cap);
 
-	MotionTrack motion(8, 32, 0.05);
+	MotionTrack motion(16, 0.05);
 
     cv::Mat frame;
 	int pressed;

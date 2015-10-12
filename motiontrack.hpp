@@ -26,17 +26,16 @@ class MotionTrack
         std::vector<cv::Moments> moments;
 
 		double learningRate;
-		int dilateRange, erodeRange;
+		int blurStrength;
 
         int minArea = MIN_AREA;
         int maxArea = MAX_AREA;
 
 	public:
-		MotionTrack(int _dilateRange, int _erodeRange, double _learningRate)
+		MotionTrack(int _blurStrength, double _learningRate)
 		{
 			bgsubtract = new cv::BackgroundSubtractorMOG2( HISTORY, THRESHOLD, true );
-			dilateRange = _dilateRange;
-			erodeRange = _erodeRange;
+			blurStrength = _blurStrength * 2 + 1;
 			learningRate = _learningRate;
 		}
 
