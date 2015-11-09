@@ -6,15 +6,6 @@
 void MotionTrack::UpdateFrame(cv::Mat newFrame)
 {
 	cv::Mat tmpFrame = newFrame.clone();
-	
-    /*
-	//Simplify the frame
-	cv::Mat dilateElement = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(dilateRange, dilateRange));
-	cv::Mat erodeElement = getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(erodeRange, erodeRange));
-	cv::dilate(tmpFrame, tmpFrame, cv::Mat());
-	cv::erode(tmpFrame, tmpFrame, cv::Mat());
-    */
-
     cv::GaussianBlur(tmpFrame, tmpFrame, cv::Size(blurStrength, blurStrength), 0, 0, cv::BORDER_DEFAULT);
 
 	//Subtract the static background from the frame
