@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 	
 	if (debugMode)
 	{
-		cv::namedWindow("Alkuperainen", cv::WINDOW_NORMAL);
+		cv::namedWindow("Video", cv::WINDOW_NORMAL);
 		cv::namedWindow("Suodatettu", cv::WINDOW_NORMAL);
 		cv::namedWindow("Tausta", cv::WINDOW_NORMAL);
 	}
@@ -37,6 +37,9 @@ int main(int argc, char** argv)
 
     cv::Mat frame;
 	int pressed;
+
+	unsigned targetX, targetY;
+
     while(keepRunning)
     {
         frameMutex.lock();
@@ -44,10 +47,12 @@ int main(int argc, char** argv)
         frameMutex.unlock();
 	
 		motion.UpdateFrame(frame);
+		targetX = motion.getTargetX();
+		targetY = motion.getTargetY();
 		
 		if (debugMode)
 		{	
-			cv::imshow("Alkuperainen", frame);
+			cv::imshow("Video", motion.getGoalFrame());
 			cv::imshow("Suodatettu", motion.getResult());
 			cv::imshow("Tausta", motion.getBackground());
 		}

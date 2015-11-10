@@ -3,15 +3,14 @@
 #include <map>
 #include <cmath>
 
-static const int MOMENT_MERGE_THRESH = 400;
-
 float distance(int x1, int x2, int y1, int y2, float area1, float area2);
 void handleGrouping(std::vector<std::vector<unsigned> > &neighbors, std::map<unsigned, bool> &handled, unsigned i);
 
 void MotionTrack::UpdateFrame(cv::Mat newFrame)
 {
 	cv::Mat tmpFrame = newFrame.clone();
-    cv::GaussianBlur(tmpFrame, tmpFrame, cv::Size(blurStrength, blurStrength), 0, 0, cv::BORDER_DEFAULT);
+	goalFrame = tmpFrame.clone();
+	cv::GaussianBlur(tmpFrame, tmpFrame, cv::Size(blurStrength, blurStrength), 0, 0, cv::BORDER_DEFAULT);
 
 	//Subtract the static background from the frame
 	bgsubtract->operator()(tmpFrame, tmpFrame, learningRate);
@@ -23,20 +22,20 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 	cv::dilate(tmpFrame, tmpFrame, cv::Mat());
 	cv::erode(tmpFrame, tmpFrame, cv::Mat());
 
-    cv::GaussianBlur(tmpFrame, tmpFrame, cv::Size(blurStrength, blurStrength), 0, 0, cv::BORDER_DEFAULT);
+	cv::GaussianBlur(tmpFrame, tmpFrame, cv::Size(blurStrength, blurStrength), 0, 0, cv::BORDER_DEFAULT);
 	cv::threshold(tmpFrame, tmpFrame, 128.0, 255.0, cv::THRESH_BINARY);
 
 	cv::findContours( tmpFrame.clone(), contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
 
 	moments = {};
-	
+
 	if (hierarchy.size() > 0)
 	{
 		for (int i = 0; i >= 0; i = hierarchy[i][0])
 		{
 			cv::Moments moment = cv::moments((cv::Mat)contours[i]);
 			double area = moment.m00;
-			if ( area < minArea || area > maxArea )
+			if ( area >= minArea && area <= maxArea )
 			{
 				moments.push_back(moment);
 			}
@@ -46,10 +45,24 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 
 	for (unsigned i = 0; i < targets.size(); i++)
 	{
-		cv::circle(tmpFrame, cv::Point(targets[i].getX(), targets[i].getY()), 20, cv::Scalar(255,0,0),2);
+		cv::circle(tmpFrame, cv::Point(targets[i].getX(), targets[i].getY()), 60, cv::Scalar(255,255), 2);
 	}
 
-	resultFrame = tmpFrame;
+	Target primary(0,0,0,0);
+	for (unsigned i = 0; i < targets.size(); i++)
+	{
+		if (targets[i].getArea() > primary.getArea())
+		{
+			primary = targets[i];
+		}
+	}
+	targetX = primary.getX();
+	targetY = primary.getY();
+
+	resultFrame = tmpFrame.clone();
+	
+	cv::circle(goalFrame, cv::Point(primary.getX(), primary.getY()), 20, cv::Scalar(0,0,255), 2);
+	cv::rectangle(goalFrame, cv::Point(primary.getX() - primary.getW()/2, primary.getY() - primary.getH()/2), cv::Point(primary.getX() + primary.getW()/2, primary.getY() + primary.getH()/2), cv::Scalar(0,0,255), 2, 8);
 }
 
 std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
@@ -59,7 +72,7 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 
 	std::vector<std::vector<unsigned> > neighbors;
 	std::vector<std::vector<cv::Moments> > groups;
-
+	std::map<unsigned, int> to_handle = {};
 	std::vector<Target> _targets = {};
 
 	for (unsigned i = 0; i < moments.size(); i++)
@@ -88,7 +101,6 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 		}
 	}
 
-	std::map<unsigned, int> to_handle = {};
 	for (unsigned i = 0; i < moments.size(); i++)
 	{
 		to_handle[i] = -1;
@@ -129,6 +141,7 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 		{
 			cv::Moments example = groups[i][0];
 			int min_x = example.m10/example.m00, max_x = min_x, min_y = example.m01/example.m00, max_y = min_y;
+
 			for (unsigned j = 0; j <= groups[i].size(); j++)
 			{
 				cv::Moments m = groups[i][j];
@@ -143,6 +156,7 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 				if (_y > max_y)
 				{max_y = _y;}
 			}
+
 			int x = (min_x + max_x);
 			int y = (min_y + max_y);
 			int w = max_x - min_x + MOMENT_MERGE_THRESH;
@@ -167,6 +181,6 @@ float distance(int x1, int y1, int x2, int y2, float area1, float area2)
 	else
 	{_y = (y1 - sqrt(area1)) - (y2 + sqrt(area2));}
 
-	return sqrt(pow(_x, 0.5) + pow(_y, 0.5));
+	return sqrt(pow(_x, 2) + pow(_y, 2));
 }
 
