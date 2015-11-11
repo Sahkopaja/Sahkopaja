@@ -38,7 +38,8 @@ int main(int argc, char** argv)
     cv::Mat frame;
 	int pressed;
 
-	unsigned targetX, targetY;
+	std::pair<double, double> targetLocation;
+	double targetX, targetY;
 
     while(keepRunning)
     {
@@ -47,8 +48,12 @@ int main(int argc, char** argv)
         frameMutex.unlock();
 	
 		motion.UpdateFrame(frame);
-		targetX = motion.getTargetX();
-		targetY = motion.getTargetY();
+		if (motion.targetFound)
+		{
+			targetLocation = motion.getTargetLocation();
+			targetX = targetLocation.first;
+			targetY = targetLocation.second;
+		}
 		
 		if (debugMode)
 		{	

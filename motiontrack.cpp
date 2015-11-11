@@ -1,9 +1,8 @@
 #include "motiontrack.hpp"
 #include <stdio.h>
-#include <map>
 #include <cmath>
 
-float distance(int x1, int x2, int y1, int y2, float area1, float area2);
+double distance(double x1, double x2, double y1, double y2, double area1, double area2);
 void handleGrouping(std::vector<std::vector<unsigned> > &neighbors, std::map<unsigned, bool> &handled, unsigned i);
 
 void MotionTrack::UpdateFrame(cv::Mat newFrame)
@@ -33,7 +32,7 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 	{
 		for (int i = 0; i >= 0; i = hierarchy[i][0])
 		{
-			cv::Moments moment = cv::moments((cv::Mat)contours[i]);
+			cv::Moments moment = cv::moments(contours[i]);
 			double area = moment.m00;
 			if ( area >= minArea && area <= maxArea )
 			{
@@ -48,27 +47,78 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 		cv::circle(tmpFrame, cv::Point(targets[i].getX(), targets[i].getY()), 60, cv::Scalar(255,255), 2);
 	}
 
-	Target primary(0,0,0,0);
-	for (unsigned i = 0; i < targets.size(); i++)
+	resultFrame = tmpFrame.clone();
+
+	if (targets.size() > 0)
 	{
-		if (targets[i].getArea() > primary.getArea())
+		double targetX = 0;
+		double targetY = 0;
+		
+		for (unsigned i = 0; i < targets.size(); i++)
 		{
-			primary = targets[i];
+			targetX += targets[i].getX();
+			targetY += targets[i].getY();
+		}
+		targetY /= targets.size();
+		targetX /= targets.size();
+
+		targetHistory.push_back(std::pair<double, double>(targetX, targetY));
+
+		//printf("%.1f %.1f\n",targetX, targetY);
+
+		if (targetHistory.size() > history_length)
+		{
+			targetHistory.erase(targetHistory.begin());
+		}
+
+		double divisor = 0, _x = 0, _y = 0;	
+		for (unsigned i = 0; i < targetHistory.size() - 1; i++)
+		{
+			divisor += (i + 1);
+			_x += ((i + 1) * (targetHistory[i + 1].first - targetHistory[i].first));
+			_y += ((i + 1) * (targetHistory[i + 1].second - targetHistory[i].second));
+		}
+
+		printf("\n");
+
+		double dX = _x / divisor;
+		double dY = _y / divisor;
+		
+		targetVelocity = std::pair<double, double>(dX, dY);
+
+		divisor = 0;
+		_x = 0;
+		_y = 0;
+		for (unsigned i = 0; i < targetHistory.size(); i++)
+		{
+			divisor += (i + 1);
+			_x += ((i + 1) * targetHistory[i].first);
+			_y += ((i + 1) * targetHistory[i].second);
+		}
+		targetX = _x / divisor + dX;
+		targetY = _y / divisor + dY;
+		
+		cv::circle(goalFrame, cv::Point(targetX, targetY), 20, cv::Scalar(0, 0, 255), 2);
+		cv::line(goalFrame, cv::Point(targetX, targetY), cv::Point(targetX + dX, targetY + dY),
+				cv::Scalar(0, 255, 0), 2);
+
+		targetFound = true;
+		targetLocation = std::pair<double, double>(targetX, targetY);
+	}
+	else
+	{
+		targetFound = false;
+		if (targetHistory.size() > 0)
+		{
+			targetHistory.erase(targetHistory.begin());
 		}
 	}
-	targetX = primary.getX();
-	targetY = primary.getY();
-
-	resultFrame = tmpFrame.clone();
-	
-	cv::circle(goalFrame, cv::Point(primary.getX(), primary.getY()), 20, cv::Scalar(0,0,255), 2);
-	cv::rectangle(goalFrame, cv::Point(primary.getX() - primary.getW()/2, primary.getY() - primary.getH()/2), cv::Point(primary.getX() + primary.getW()/2, primary.getY() + primary.getH()/2), cv::Scalar(0,0,255), 2, 8);
 }
 
 std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 {
-	unsigned x1, x2, y1, y2;
-	float area1, area2;
+	double x1, x2, y1, y2;
+	double area1, area2;
 
 	std::vector<std::vector<unsigned> > neighbors;
 	std::vector<std::vector<cv::Moments> > groups;
@@ -140,13 +190,14 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 		if (groups[i].size() > 0)
 		{
 			cv::Moments example = groups[i][0];
-			int min_x = example.m10/example.m00, max_x = min_x, min_y = example.m01/example.m00, max_y = min_y;
+			double min_x = example.m10/example.m00, max_x = min_x, min_y = example.m01/example.m00, max_y = min_y;
 
-			for (unsigned j = 0; j <= groups[i].size(); j++)
+			for (unsigned j = 0; j < groups[i].size(); j++)
 			{
 				cv::Moments m = groups[i][j];
-				int _x = m.m10/m.m00;
-				int _y = m.m01/m.m00;
+				double _x = m.m10/m.m00;
+				double _y = m.m01/m.m00;
+				
 				if (_x < min_x)
 				{min_x = _x;}
 				if (_x > max_x)
@@ -157,10 +208,10 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 				{max_y = _y;}
 			}
 
-			int x = (min_x + max_x);
-			int y = (min_y + max_y);
-			int w = max_x - min_x + MOMENT_MERGE_THRESH;
-			int h = max_y - min_y + MOMENT_MERGE_THRESH;
+			double x = (min_x + max_x) / 2;
+			double y = (min_y + max_y) / 2;
+			double w = max_x - min_x + MOMENT_MERGE_THRESH;
+			double h = max_y - min_y + MOMENT_MERGE_THRESH;
 			Target t(x, y, w, h);
 			_targets.push_back(t);
 		}
@@ -168,9 +219,9 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 	return _targets;
 }
 
-float distance(int x1, int y1, int x2, int y2, float area1, float area2)
+double distance(double x1, double y1, double x2, double y2, double area1, double area2)
 {
-	int _x, _y;
+	double _x, _y;
 	if (x1 < x2)
 	{_x = (x2 - sqrt(area2)) - (x1 + sqrt(area1));}
 	else
