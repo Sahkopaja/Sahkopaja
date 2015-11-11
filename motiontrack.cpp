@@ -64,8 +64,6 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 
 		targetHistory.push_back(std::pair<double, double>(targetX, targetY));
 
-		//printf("%.1f %.1f\n",targetX, targetY);
-
 		if (targetHistory.size() > history_length)
 		{
 			targetHistory.erase(targetHistory.begin());
@@ -78,8 +76,6 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 			_x += ((i + 1) * (targetHistory[i + 1].first - targetHistory[i].first));
 			_y += ((i + 1) * (targetHistory[i + 1].second - targetHistory[i].second));
 		}
-
-		printf("\n");
 
 		double dX = _x / divisor;
 		double dY = _y / divisor;
