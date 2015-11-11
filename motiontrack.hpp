@@ -5,6 +5,8 @@
 #include <map>
 #include <utility>
 
+#include "camera.hpp"
+
 static const int HISTORY = 50;
 static const double THRESHOLD = 3.0;
 
@@ -42,17 +44,27 @@ class MotionTrack
 		double learningRate;
 		int blurStrength;
 
-        int minArea = MIN_AREA;
-        int maxArea = MAX_AREA;
+        int minArea;
+        int maxArea;
 
-		int history_length = HISTORY_LENGTH;
+		int history_length;
 
 	public:
-		MotionTrack(int _blurStrength, double _learningRate)
+		MotionTrack(Preferences *pref)
 		{
-			bgsubtract = new cv::BackgroundSubtractorMOG2( HISTORY, THRESHOLD, true );
+			int history = pref->readInt("background_history", HISTORY);
+			double threshold = pref->readDouble("background_threshold", THRESHOLD);
+			bgsubtract = new cv::BackgroundSubtractorMOG2( history, threshold, true );
+			
+			int _blurStrength = pref->readInt("background_blur", 16);
+			double _learningRate = pref->readDouble("background_learn", 0.05);
 			blurStrength = _blurStrength * 2 + 1;
 			learningRate = _learningRate;
+
+			minArea = pref->readInt("motion_detection_min_area", MIN_AREA);
+			maxArea = pref->readInt("motion_detection_max_area", MAX_AREA);
+
+			history_length = pref->readInt("motion_detection_target_history", HISTORY_LENGTH);
 		}
 
 		std::vector<Target> MergeMoments(std::vector<cv::Moments> moments);

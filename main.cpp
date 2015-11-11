@@ -7,15 +7,22 @@
 
 #include "camera.hpp"
 #include "motiontrack.hpp"
+#include "preferences.hpp"
 
 int main(int argc, char** argv)
 {
 	bool debugMode = false;
+	std::string configFile = "preferences.json";
 
-	//Not a good way to handle this, but will do for now since we probably won't have any more commmand line arguments
-	if (argc > 1 && std::string(argv[1]) == "--DEBUG") debugMode = true;
+	if (argc > 1)
+	{
+		configFile = std::string(argv[1]);
+	}
 	
-    cv::VideoCapture cap = initCamera();
+	Preferences preferences(configFile);
+	debugMode = (preferences.readInt("debug_mode", 1) != 0);
+
+    cv::VideoCapture cap = initCamera(&preferences);
 	
 	if (debugMode)
 	{
@@ -33,7 +40,7 @@ int main(int argc, char** argv)
 
     std::thread frameThread(frameUpdate, &keepRunning, &_frame, &frameMutex, &cap);
 
-	MotionTrack motion(16, 0.05);
+	MotionTrack motion(&preferences);
 
     cv::Mat frame;
 	int pressed;

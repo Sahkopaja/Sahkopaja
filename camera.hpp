@@ -7,7 +7,9 @@
 #include <mutex>
 #include <chrono>
 
-cv::VideoCapture initCamera();
+#include "preferences.hpp"
+
+cv::VideoCapture initCamera(Preferences *pref);
 void frameUpdate(bool *keepRunning, cv::Mat *_frame, std::mutex *_frameMutex, cv::VideoCapture *_cap);
 
 #endif
