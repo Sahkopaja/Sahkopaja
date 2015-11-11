@@ -1,0 +1,12 @@
+{
+	"debug_mode" : 1,
+	"background_history" : 10,
+	"background_threshold" : 3.0,
+	"background_blur" : 16,
+	"background_learn" : 0.05,
+	"motion_detection_min_area" : 1000,
+	"motion_detection_max_area" : 40000,
+	"motion_detection_target_history" : 5,
+	"camera_frameW" : 240,
+	"camera_frameH" : 180
+}

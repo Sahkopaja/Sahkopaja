@@ -1,10 +1,10 @@
 #include "camera.hpp"
-
+#include "preferences.hpp"
 
 static const int FRAME_W = 240;
 static const int FRAME_H = 180;
 
-cv::VideoCapture initCamera()
+cv::VideoCapture initCamera(Preferences *pref)
 {
 	cv::VideoCapture cap(0);
 
@@ -13,8 +13,11 @@ cv::VideoCapture initCamera()
 		throw new std::runtime_error("Camera couldn't be opened.");
 	}
 
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, FRAME_W);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_H);
+	int frame_width = pref->readInt("camera_frameW", FRAME_W);
+	int frame_height = pref->readInt("camera_frameH", FRAME_H);
+
+	cap.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
+	cap.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
 	
 	return cap;
 }
