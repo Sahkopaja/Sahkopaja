@@ -16,8 +16,8 @@ cv::VideoCapture initCamera(Preferences *pref)
 	int frame_width = pref->readInt("camera_frameW", FRAME_W);
 	int frame_height = pref->readInt("camera_frameH", FRAME_H);
 
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
+	cap.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
+	cap.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
 	
 	return cap;
 }
