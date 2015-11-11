@@ -6,8 +6,10 @@
 static const int HISTORY = 50;
 static const double THRESHOLD = 3.0;
 
-static const int MIN_AREA = 400;
-static const int MAX_AREA = 2000;
+static const int MIN_AREA = 1000;
+static const int MAX_AREA = 40000;
+
+static const int MOMENT_MERGE_THRESH = 50;
 
 struct Target;
 
@@ -19,6 +21,7 @@ class MotionTrack
 
 		cv::Mat background;
 		cv::Mat resultFrame;
+		cv::Mat goalFrame;
 
 		cv::BackgroundSubtractor *bgsubtract;
 
@@ -27,6 +30,8 @@ class MotionTrack
 
         std::vector<cv::Moments> moments;
 		std::vector<Target> targets;
+
+		unsigned targetX, targetY;
 
 		double learningRate;
 		int blurStrength;
@@ -48,6 +53,10 @@ class MotionTrack
 
 		cv::Mat getResult() {return resultFrame.clone();}
 		cv::Mat getBackground() {return background.clone();}
+		cv::Mat getGoalFrame() {return goalFrame.clone();}
+
+		unsigned getTargetX() {return targetX;}
+		unsigned getTargetY() {return targetY;}
 };
 
 //Simple struct to contain targets to shoot at
@@ -63,6 +72,7 @@ struct Target
 		unsigned getY() {return y;}
 		unsigned getW() {return w;}
 		unsigned getH() {return h;}
+		unsigned getArea() {return w*h;}
 };
 
 #endif
