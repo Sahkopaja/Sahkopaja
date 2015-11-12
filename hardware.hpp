@@ -7,16 +7,21 @@
 #include <thread>
 #include <chrono>
 
+#include "preferences.hpp"
+
 const unsigned SERVOAMOUNT = 8;
 enum {XSERVO, YSERVO, TRIGGERSERVO};
 
 class GPIOState
 {
 private:
-	int servoPositions[8];
+	int servoPositions[SERVOAMOUNT];
 	std::ofstream file;
-	double calibrationShiftX;
-	double calibrationShiftY;
+	double calibrationLowerX;
+	double calibrationUpperX;
+	double calibrationLowerY;
+	double calibrationUpperY;
+
 	double maxWidth;
 	double maxHeight;
 public:
@@ -25,16 +30,19 @@ public:
 
 	//constructor initializes every servo at their centre point
 	//it also prompts for data about calibrational shifts.
-	GPIOState(double _maxWidth, double _maxHeight, double _calibrationShiftX = 0, double _calibrationShiftY = 0)
+	GPIOState(Preferences *pref)
 	{
-		for(unsigned i=0;i<8;i++) {
+		for(unsigned i = 0; i < SERVOAMOUNT; i++) {
 			servoPositions[i] = 50;
 		}
 		file.open("/dev/servoblaster");
-		calibrationShiftX = _calibrationShiftX;
-		calibrationShiftY = _calibrationShiftY;
-		maxWidth = _maxWidth;
-		maxHeight = _maxHeight;
+
+		calibrationLowerX = pref->readInt("servo_calibration_lower_x", 0);
+		calibrationUpperX = pref->readInt("servo_calibration_upper_x", 0);
+		calibrationLowerY = pref->readInt("servo_calibration_lower_y", 0);
+		calibrationUpperY = pref->readInt("servo_calibration_upper_y", 0);
+		maxWidth = pref->readInt("camera_frameW", 240);
+		maxHeight = pref->readInt("camera_frameH", 180);
 	}
 	//destructor closes the file
 	~GPIOState() {
@@ -68,9 +76,6 @@ public:
 	{
 		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY); } );
 	}
-
 };
-
-
 
 #endif

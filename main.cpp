@@ -52,11 +52,8 @@ int main(int argc, char** argv)
     std::mutex frameMutex;
     std::thread frameThread(frameUpdate, &keepRunning, &_frame, &frameMutex, &cap);
 	
-	int frameW = preferences.readInt("camera_frameW", 240);
-	int frameH = preferences.readInt("camera_frameH", 180);
-
 	double targetX, targetY;
-	GPIOState gpio(frameW, frameH);
+	GPIOState gpio(&preferences);
 	std::mutex hwMutex;
 	std::thread hwThread = gpio.runThread(&keepRunning, &hwMutex, &targetX, &targetY);
 
@@ -93,6 +90,7 @@ int main(int argc, char** argv)
     }
 	
 	printf("\nExiting...\n");
+
     frameThread.join();
 	hwThread.join();
     

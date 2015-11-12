@@ -19,7 +19,6 @@ class Preferences
 			Json::Reader reader;
 
 			std::ifstream fs(fileName, std::ios::in);
-			std::stringstream ss;
 
 			if (!fs.is_open())
 				throw std::runtime_error("File " + fileName + " couldn't be opened\n");

@@ -15,8 +15,8 @@ void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX,
 		targetY = *mainY;
 		hardWareMutex->unlock();
 		
-		double finalX = targetX+calibrationShiftX;
-		double finalY = targetY+calibrationShiftY;
+		double finalX = calibrationLowerX + (targetX/100 * (calibrationUpperX - calibrationLowerX));
+		double finalY = calibrationLowerY + (targetY/100 * (calibrationUpperY - calibrationLowerY));
 
 		if(finalX > maxWidth) {
 			finalX = maxWidth;
