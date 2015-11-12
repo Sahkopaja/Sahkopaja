@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <signal.h>
+
 #include <opencv2/opencv.hpp>
 #include <thread>
 #include <mutex>
@@ -10,8 +12,19 @@
 #include "preferences.hpp"
 #include "hardware.hpp"
 
+bool keepRunning = true;
+
+void interruptHandler(int)
+{
+	keepRunning = false;
+}
+
 int main(int argc, char** argv)
 {
+	struct sigaction act;
+	act.sa_handler = interruptHandler;
+	sigaction(SIGINT, &act, NULL);
+
 	bool debugMode = false;
 	std::string configFile = "preferences.json";
 
@@ -32,20 +45,15 @@ int main(int argc, char** argv)
 		cv::namedWindow("Tausta", cv::WINDOW_NORMAL);
 	}
 
-    bool keepRunning = true;
-    
-    cv::Mat _frame;
+	cv::Mat _frame;
 
 	cap.read(_frame);
 
     std::mutex frameMutex;
     std::thread frameThread(frameUpdate, &keepRunning, &_frame, &frameMutex, &cap);
 	
-	int frameW = preferences.readInt("camera_frameW", 240);
-	int frameH = preferences.readInt("camera_frameH", 180);
-
 	double targetX, targetY;
-	GPIOState gpio(frameW, frameH);
+	GPIOState gpio(&preferences);
 	std::mutex hwMutex;
 	std::thread hwThread = gpio.runThread(&keepRunning, &hwMutex, &targetX, &targetY);
 
@@ -81,6 +89,8 @@ int main(int argc, char** argv)
         if ((char)pressed == 'q') keepRunning = false;
     }
 	
+	printf("\nExiting...\n");
+
     frameThread.join();
 	hwThread.join();
     
