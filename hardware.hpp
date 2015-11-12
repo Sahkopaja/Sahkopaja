@@ -4,6 +4,8 @@
 #include <fstream>
 #include <string>
 #include <mutex>
+#include <thread>
+#include <chrono>
 
 const unsigned SERVOAMOUNT = 8;
 enum {XSERVO, YSERVO, TRIGGERSERVO};
@@ -13,18 +15,18 @@ class GPIOState
 private:
 	int servoPositions[8];
 	std::ofstream file;
-	float calibrationShiftX;
-	float calibrationShiftY;
-	float maxWidth;
-	float maxHeight;
+	double calibrationShiftX;
+	double calibrationShiftY;
+	double maxWidth;
+	double maxHeight;
 public:
 	//calibration shift refers to the angle between the camera and
 	//the nerf gun
 
 	//constructor initializes every servo at their centre point
 	//it also prompts for data about calibrational shifts.
-	GPIOState(float _calibrationShiftX, float _calibrationShiftY
-		, float _maxWidth, float _maxHeight) {
+	GPIOState(double _maxWidth, double _maxHeight, double _calibrationShiftX = 0, double _calibrationShiftY = 0)
+	{
 		for(unsigned i=0;i<8;i++) {
 			servoPositions[i] = 50;
 		}
@@ -61,7 +63,12 @@ public:
 		}
 		return servoPositions[servoNumber];
 	}
-	void runThread(bool *keepRunning, std::mutex *hardWareMutex, float *mainX, float *mainY);
+	void run(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY);
+	std::thread runThread(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY)
+	{
+		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY); } );
+	}
+
 };
 
 

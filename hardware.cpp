@@ -1,19 +1,22 @@
 #include "hardware.hpp"
 
-void GPIOState::runThread(bool *keepRunning, std::mutex *hardWareMutex, float* mainX, float* mainY)
+void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX, double* mainY)
 {
 	//thread's main loop
+	
+	std::chrono::duration<double, std::milli> sleep_duration(5);
+	
 	while(*keepRunning) {
-		float targetX = 0.0f;
-		float targetY = 0.0f;
+		double targetX = 0.0f;
+		double targetY = 0.0f;
 		//fetches the coordinates from the main thread
 		hardWareMutex->lock();
 		targetX = *mainX;
 		targetY = *mainY;
 		hardWareMutex->unlock();
 		
-		float finalX = targetX+calibrationShiftX;
-		float finalY = targetY+calibrationShiftY;
+		double finalX = targetX+calibrationShiftX;
+		double finalY = targetY+calibrationShiftY;
 
 		if(finalX > maxWidth) {
 			finalX = maxWidth;
@@ -31,5 +34,7 @@ void GPIOState::runThread(bool *keepRunning, std::mutex *hardWareMutex, float* m
 		finalY = 100.0f*finalY/maxHeight;
 		setServoPosition(XSERVO, (int)finalX);
 		setServoPosition(YSERVO, (int)finalY);
+		
+		std::this_thread::sleep_for(sleep_duration);
 	}
 }
