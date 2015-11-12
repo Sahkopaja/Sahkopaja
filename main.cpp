@@ -6,11 +6,58 @@
 #include <mutex>
 #include <chrono>
 #include <string>
+#include <vector>
 
 #include "camera.hpp"
 #include "motiontrack.hpp"
 #include "preferences.hpp"
 #include "hardware.hpp"
+
+class TargetValidator {
+private:
+	double minimumSampleRatio;
+	std::vector<bool> samples;
+	unsigned frameIteration;
+public:
+	//minimum of 1 frames in minimumSampleRatio mandatory
+	TargetValidator(unsigned _sampleSize, double _minimumSampleRatio) {
+		minimumSampleRatio = _minimumSampleRatio;
+		frameIteration = 0u;
+		samples.reserve(_sampleSize);
+		if(_sampleSize == 0u) {
+			_sampleSize = 1u;
+		}
+		for(unsigned i=0;i<_sampleSize;i++) {
+			samples.push_back(false);
+		}
+	}
+	//updates the samples and returns true or false whether target was validated
+	bool updateSamples(bool lastSample) {
+		if(!(frameIteration < samples.size())) {
+			frameIteration = 0u;
+		}
+		samples[frameIteration] = lastSample;
+		frameIteration++;
+		return getTargetValidated();
+	}
+	//how many of the samples are true
+	double getSampleRatio() {
+		unsigned sampleAmount = 0u;
+		for (unsigned i=0;i<samples.size();i++) {
+			if(samples[i]) {
+				sampleAmount++;
+			}
+		}
+		return (double) sampleAmount/samples.size();
+	}
+	//if the sample ratio exceeds given minimum sample ratio, return true. Else return false.
+	bool getTargetValidated() {
+		if(getSampleRatio() >= minimumSampleRatio) {
+			return true;
+		}
+		return false;
+	}
+};
 
 bool keepRunning = true;
 
@@ -35,8 +82,10 @@ int main(int argc, char** argv)
 	
 	Preferences preferences(configFile);
 	debugMode = (preferences.readInt("debug_mode", 1) != 0);
+	
+	//TargetValidator validator = TargetValidator();
 
-    cv::VideoCapture cap = initCamera(&preferences);
+	cv::VideoCapture cap = initCamera(&preferences);
 	
 	if (debugMode)
 	{
@@ -71,11 +120,16 @@ int main(int argc, char** argv)
         frameMutex.unlock();
 	
 		motion.UpdateFrame(frame);
-		if (motion.targetFound)
+		bool targetFound = motion.targetFound;
+		//bool targetConfirmed =;
+		if (targetFound)
 		{
+			hwMutex.lock();
 			targetLocation = motion.getTargetLocation();
 			targetX = targetLocation.first;
 			targetY = targetLocation.second;
+			//targetConfirmed = confirmTarget();
+			hwMutex.unlock();
 		}
 		
 		if (debugMode)
