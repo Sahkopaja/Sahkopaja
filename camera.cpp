@@ -34,6 +34,8 @@ void frameUpdate(bool *keepRunning, cv::Mat *_frame, std::mutex *_frameMutex, cv
         _frameMutex->unlock();
         std::this_thread::sleep_for(sleep_duration);
     }
+
+    _cap->release();
     return;
 }
 
