@@ -1,6 +1,6 @@
 #include "hardware.hpp"
 
-void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX, double* mainY)
+void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX, double* mainY, bool *targetConfirmed)
 {
 	//thread's main loop
 	

@@ -12,5 +12,7 @@
 	"servo_calibration_lower_x" : 40,
 	"servo_calibration_upper_x" : 60,
 	"servo_calibration_lower_y" : 40,
-	"servo_calibration_upper_y" : 60
+	"servo_calibration_upper_y" : 60,
+	"target_sample_size" : 10,
+	"target_sample_ratio" : 0.8
 }
