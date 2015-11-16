@@ -1,5 +1,6 @@
 {
 	"debug_mode" : 1,
+	"disable_shooting" : 0,
 	"background_history" : 10,
 	"background_threshold" : 3.0,
 	"background_blur" : 16,
@@ -13,6 +14,9 @@
 	"servo_calibration_upper_x" : 60,
 	"servo_calibration_lower_y" : 40,
 	"servo_calibration_upper_y" : 60,
+	"servo_calibration_lower_trigger" : 40,
+	"servo_calibration_upper_trigger" : 60,
+	"servo_calibration_trigger_duration" : 2000,
 	"target_sample_size" : 10,
 	"target_sample_ratio" : 0.8
 }

@@ -7,12 +7,15 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "camera.hpp"
 #include "motiontrack.hpp"
 #include "preferences.hpp"
 #include "hardware.hpp"
 
+
+//This class essentially decides whether to shoot a potential found target
 class TargetValidator
 {
 	private:
@@ -27,18 +30,18 @@ class TargetValidator
 			minimumSampleRatio = _minimumSampleRatio;
 			frameIteration = 0u;
 			samples.reserve(_sampleSize);
-			
+
 			if(_sampleSize == 0u)
 			{
 				_sampleSize = 1u;
 			}
-			
+
 			for (unsigned i = 0; i < _sampleSize; i++)
 			{
 				samples.push_back(false);
 			}
 		}
-		
+
 		//updates the samples and returns true or false whether target was validated
 		bool updateSamples(bool lastSample)
 		{
@@ -49,7 +52,7 @@ class TargetValidator
 
 			samples[frameIteration] = lastSample;
 			frameIteration++;
-			return getTargetValidated();
+			return getSampleRatio() >= minimumSampleRatio;
 		}
 
 		//how many of the samples are true
@@ -65,20 +68,11 @@ class TargetValidator
 			}
 			return (double) sampleAmount/samples.size();
 		}
-
-		//if the sample ratio exceeds given minimum sample ratio, return true. Else return false.
-		bool getTargetValidated()
-		{
-			if (getSampleRatio() >= minimumSampleRatio)
-			{
-				return true;
-			}
-			return false;
-		}
 };
 
 bool keepRunning = true;
 
+//Handles Ctrl-C etc. signals
 void interruptHandler(int)
 {
 	keepRunning = false;
@@ -90,7 +84,6 @@ int main(int argc, char** argv)
 	act.sa_handler = interruptHandler;
 	sigaction(SIGINT, &act, NULL);
 
-	bool debugMode = false;
 	std::string configFile = "preferences.json";
 
 	if (argc > 1)
@@ -99,7 +92,8 @@ int main(int argc, char** argv)
 	}
 
 	Preferences preferences(configFile);
-	debugMode = (preferences.readInt("debug_mode", 1) != 0);
+	bool debugMode = (preferences.readInt("debug_mode", 1) != 0);
+	bool disableShooting = (preferences.readInt("disable_shooting", 0) != 0);
 
 	unsigned sampleSize = preferences.readInt("target_sample_size", 0);
 	double minimumSampleRatio = preferences.readDouble("target_sample_ratio", 0.9);
@@ -109,22 +103,23 @@ int main(int argc, char** argv)
 
 	if (debugMode)
 	{
+		//Setup video windows
 		cv::namedWindow("Video", cv::WINDOW_NORMAL);
 		cv::namedWindow("Suodatettu", cv::WINDOW_NORMAL);
 		cv::namedWindow("Tausta", cv::WINDOW_NORMAL);
 	}
 
+	//Set up the thread to read frames from camera feed
 	cv::Mat _frame;
-
 	cap.read(_frame);
-
     std::mutex frameMutex;
     std::thread frameThread(frameUpdate, &keepRunning, &_frame, &frameMutex, &cap);
 
+	//Set up the thread handling hardware interaction
 	double targetX = -1, targetY = -1;
 	GPIOState gpio(&preferences);
 	std::mutex hwMutex;
-	std::thread hwThread = gpio.runThread(&keepRunning, &hwMutex, &targetX, &targetY, &targetConfirmed);
+	std::thread hwThread = gpio.runThread(&keepRunning, &hwMutex, &targetX, &targetY, &targetConfirmed, &disableShooting);
 
 	MotionTrack motion(&preferences);
 
@@ -134,25 +129,20 @@ int main(int argc, char** argv)
 	TargetValidator validator = TargetValidator(sampleSize, minimumSampleRatio);
 	std::pair<double, double> targetLocation;
 
+	//The main loop of the program
     while(keepRunning)
     {
+		//Read a frame from camera thread
         frameMutex.lock();
         frame = _frame;
         frameMutex.unlock();
 
+		//Do motion detection calculations
 		motion.UpdateFrame(frame);
 		targetFound = motion.targetFound;
 		targetConfirmed = validator.updateSamples(targetFound);
 
-		if (targetConfirmed && debugMode)
-		{
-			printf("Target confirmed\n");
-		}
-		else if (debugMode)
-		{
-			printf("Target not confirmed\n");
-		}
-
+		//Interact with hardware
 		if (targetFound)
 		{
 			hwMutex.lock();
@@ -162,6 +152,7 @@ int main(int argc, char** argv)
 			hwMutex.unlock();
 		}
 
+		//Update the windows
 		if (debugMode)
 		{
 			cv::imshow("Video", motion.getGoalFrame());
@@ -169,15 +160,17 @@ int main(int argc, char** argv)
 			cv::imshow("Tausta", motion.getBackground());
 		}
 
+		//For quitting the program press q (only works in debug mode, use ctrl-c in other cases)
 		pressed = cv::waitKey(1);
         if ((char)pressed == 'q') keepRunning = false;
     }
-	
-	printf("\nExiting...\n");
 
+	std::cout << "\nExiting...\n";
+
+	//Wait for other threads to close
     frameThread.join();
 	hwThread.join();
-    
+
 	return 0;
 }
 

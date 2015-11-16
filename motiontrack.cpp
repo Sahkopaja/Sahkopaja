@@ -24,6 +24,7 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 	cv::GaussianBlur(tmpFrame, tmpFrame, cv::Size(blurStrength, blurStrength), 0, 0, cv::BORDER_DEFAULT);
 	cv::threshold(tmpFrame, tmpFrame, 128.0, 255.0, cv::THRESH_BINARY);
 
+	//Find basic shapes from the image
 	cv::findContours( tmpFrame.clone(), contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
 
 	moments = {};
@@ -49,11 +50,12 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 
 	resultFrame = tmpFrame.clone();
 
+	//Do (relatively) simple cluster analysis on potential targets
 	if (targets.size() > 0)
 	{
 		double targetX = 0;
 		double targetY = 0;
-		
+
 		for (unsigned i = 0; i < targets.size(); i++)
 		{
 			targetX += targets[i].getX();
@@ -69,7 +71,7 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 			targetHistory.erase(targetHistory.begin());
 		}
 
-		double divisor = 0, _x = 0, _y = 0;	
+		double divisor = 0, _x = 0, _y = 0;
 		for (unsigned i = 0; i < targetHistory.size() - 1; i++)
 		{
 			divisor += (i + 1);
@@ -79,7 +81,7 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 
 		double dX = _x / divisor;
 		double dY = _y / divisor;
-		
+
 		targetVelocity = std::pair<double, double>(dX, dY);
 
 		divisor = 0;
@@ -93,7 +95,7 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 		}
 		targetX = _x / divisor + dX;
 		targetY = _y / divisor + dY;
-		
+
 		cv::circle(goalFrame, cv::Point(targetX, targetY), 20, cv::Scalar(0, 0, 255), 2);
 		cv::line(goalFrame, cv::Point(targetX, targetY), cv::Point(targetX + dX, targetY + dY),
 				cv::Scalar(0, 255, 0), 2);
@@ -111,6 +113,8 @@ void MotionTrack::UpdateFrame(cv::Mat newFrame)
 	}
 }
 
+
+//Cluster analysis assist function
 std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 {
 	double x1, x2, y1, y2;
@@ -193,7 +197,7 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 				cv::Moments m = groups[i][j];
 				double _x = m.m10/m.m00;
 				double _y = m.m01/m.m00;
-				
+
 				if (_x < min_x)
 				{min_x = _x;}
 				if (_x > max_x)
@@ -215,6 +219,7 @@ std::vector<Target> MotionTrack::MergeMoments(std::vector<cv::Moments> moments)
 	return _targets;
 }
 
+//Calculates distance between two rectangles
 double distance(double x1, double y1, double x2, double y2, double area1, double area2)
 {
 	double _x, _y;

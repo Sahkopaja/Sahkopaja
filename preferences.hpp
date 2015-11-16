@@ -7,6 +7,8 @@
 #include <exception>
 #include <fstream>
 
+
+//Basic JSON config file reader based on libjsoncpp
 class Preferences
 {
 	private:

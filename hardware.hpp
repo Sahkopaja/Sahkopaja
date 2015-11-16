@@ -22,27 +22,42 @@ private:
 	int calibrationLowerY;
 	int calibrationUpperY;
 
+	int calibrationUpperTrigger;
+	int calibrationLowerTrigger;
+	int triggerDuration;
+
 	int maxWidth;
 	int maxHeight;
+
+	std::chrono::duration<int, std::milli> triggerServoDuration;
+	std::chrono::system_clock::time_point servoActivationTime;
+	bool triggerServoActive;
+
 public:
-	//calibration shift refers to the angle between the camera and
-	//the nerf gun
 
 	//constructor initializes every servo at their centre point
 	//it also prompts for data about calibrational shifts.
 	GPIOState(Preferences *pref)
 	{
-		for(unsigned i = 0; i < SERVOAMOUNT; i++) {
-			servoPositions[i] = 50;
-		}
 		file.open("/dev/servoblaster");
 
+		//Load all the required preferences
 		calibrationLowerX = pref->readInt("servo_calibration_lower_x", 0);
-		calibrationUpperX = pref->readInt("servo_calibration_upper_x", 0);
+		calibrationUpperX = pref->readInt("servo_calibration_upper_x", 100);
 		calibrationLowerY = pref->readInt("servo_calibration_lower_y", 0);
-		calibrationUpperY = pref->readInt("servo_calibration_upper_y", 0);
+		calibrationUpperY = pref->readInt("servo_calibration_upper_y", 100);
+		calibrationLowerTrigger = pref->readInt("servo_calibration_lower_trigger", 0);
+		calibrationUpperTrigger = pref->readInt("servo_calibration_upper_trigger", 100);
+		triggerDuration = pref->readInt("servo_calibration_trigger_duration", 2000);
 		maxWidth = pref->readInt("camera_frameW", 240);
 		maxHeight = pref->readInt("camera_frameH", 180);
+
+		triggerServoDuration = std::chrono::duration<int, std::milli>(triggerDuration);
+		triggerServoActive = false;
+
+		servoPositions[XSERVO] = (calibrationLowerX + calibrationUpperX) / 2;
+		servoPositions[YSERVO] = (calibrationLowerY + calibrationUpperY) / 2;
+		servoPositions[TRIGGERSERVO] = (calibrationLowerTrigger + calibrationUpperTrigger) / 2;
 	}
 	//destructor closes the file
 	~GPIOState() {
@@ -71,10 +86,10 @@ public:
 		}
 		return servoPositions[servoNumber];
 	}
-	void run(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *targetConfirmed);
-	std::thread runThread(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *targetConfirmed)
+	void run(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *targetConfirmed, bool *disableShooting);
+	std::thread runThread(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *targetConfirmed, bool *disableShooting)
 	{
-		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY, targetConfirmed); } );
+		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY, targetConfirmed, disableShooting); } );
 	}
 };
 

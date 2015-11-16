@@ -24,6 +24,7 @@ cv::VideoCapture initCamera(Preferences *pref)
 
 void frameUpdate(bool *keepRunning, cv::Mat *_frame, std::mutex *_frameMutex, cv::VideoCapture *_cap)
 {
+	//Keep reading frames from camera feed
     std::chrono::duration<double, std::milli> sleep_duration(5);
 	cv::Mat tmp;
     while(*keepRunning)
