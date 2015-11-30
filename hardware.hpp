@@ -101,10 +101,10 @@ public:
 		}
 		return servoPositions[servoNumber];
 	}
-	void run(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *targetConfirmed, bool *disableShooting);
-	std::thread runThread(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *targetConfirmed, bool *disableShooting)
+	void run(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *startShooting, bool *shootingDone, bool *disableShooting);
+	std::thread runThread(bool *keepRunning, std::mutex *hardWareMutex, double *mainX, double *mainY, bool *startShooting, bool *shootingDone, bool *disableShooting)
 	{
-		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY, targetConfirmed, disableShooting); } );
+		return std::thread([=] { run(keepRunning, hardWareMutex, mainX, mainY, startShooting, shootingDone, disableShooting); } );
 	}
 };
 

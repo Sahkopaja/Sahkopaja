@@ -14,6 +14,13 @@
 #include "preferences.hpp"
 #include "hardware.hpp"
 
+//Main loop works as a FSM, this defines possible states
+typedef enum
+{
+	RESET,
+	ACQUIRE,
+	ELIMINATE
+} ProgramState;
 
 //This class essentially decides whether to shoot a potential found target
 class TargetValidator
@@ -119,7 +126,9 @@ int main(int argc, char** argv)
 	double targetX = -1, targetY = -1;
 	GPIOState gpio(&preferences);
 	std::mutex hwMutex;
-	std::thread hwThread = gpio.runThread(&keepRunning, &hwMutex, &targetX, &targetY, &targetConfirmed, &disableShooting);
+	bool startShooting = false;
+	bool shootingDone = false;
+	std::thread hwThread = gpio.runThread(&keepRunning, &hwMutex, &targetX, &targetY, &startShooting, &shootingDone, &disableShooting);
 
 	MotionTrack motion(&preferences);
 
@@ -128,6 +137,8 @@ int main(int argc, char** argv)
 
 	TargetValidator validator = TargetValidator(sampleSize, minimumSampleRatio);
 	std::pair<double, double> targetLocation;
+
+	ProgramState state = RESET;
 
 	//The main loop of the program
     while(keepRunning)
@@ -142,13 +153,41 @@ int main(int argc, char** argv)
 		targetFound = motion.targetFound;
 		targetConfirmed = validator.updateSamples(targetFound);
 
-		//Interact with hardware
-		if (targetFound)
+		//Reset gun position
+		if (state == ProgramState::RESET)
+		{
+			targetX = -1.0;
+			targetY = -1.0;
+
+			if (!targetConfirmed)
+			{
+				state = ProgramState::ACQUIRE;
+			}
+		}
+		//Move to elimination phase if target is found
+		else if (state == ProgramState::ACQUIRE)
+		{
+			if (targetConfirmed)
+			{
+				state = ProgramState::ELIMINATE;
+				startShooting = true;
+			}
+		}
+		//Aim at the target if found
+		else if (state == ProgramState::ELIMINATE)
 		{
 			hwMutex.lock();
 			targetLocation = motion.getTargetLocation();
 			targetX = targetLocation.first;
 			targetY = targetLocation.second;
+
+			if (shootingDone)
+			{
+				startShooting = false;
+				shootingDone = false;
+				state = ProgramState::RESET;
+			}
+
 			hwMutex.unlock();
 		}
 

@@ -1,6 +1,6 @@
 #include "hardware.hpp"
 
-void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX, double* mainY, bool *targetConfirmed, bool *disableShooting)
+void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX, double* mainY, bool *startShooting, bool *shootingDone, bool *disableShooting)
 {
 	//thread's main loop
 
@@ -15,16 +15,19 @@ void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX,
 		double targetY = *mainY;
 		hardWareMutex->unlock();
 
-		//The following block handle the trigger mechanism
+		//The following block handles the trigger mechanism
 		if (!disableShooting)
 		{
 			if (triggerServoActive && std::chrono::system_clock::now() - servoActivationTime > triggerServoDuration)
 			{
 				setServoPosition(TRIGGERSERVO, calibrationLowerTrigger);
 				triggerServoActive = false;
+				hardWareMutex->lock();
+				*shootingDone = true;
+				hardWareMutex->unlock();
 			}
 
-			if (!triggerServoActive && targetConfirmed)
+			if (!triggerServoActive && startShooting)
 			{
 				setServoPosition(TRIGGERSERVO, calibrationUpperTrigger);
 				servoActivationTime = std::chrono::system_clock::now();
@@ -43,8 +46,8 @@ void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX,
         }
         else
         {
-            targetX = 50;
-            targetY = 50;
+            targetX = (calibrationUpperX + calibrationLowerX) / 2;
+            targetY = (calibrationUpperX + calibrationLowerX) / 2;
         }
         setServoPosition(XSERVO, (int)targetX);
 		setServoPosition(YSERVO, (int)targetY);
