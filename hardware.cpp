@@ -32,6 +32,9 @@ void GPIOState::run(bool *keepRunning, std::mutex *hardWareMutex, double* mainX,
 				setServoPosition(TRIGGERSERVO, calibrationUpperTrigger);
 				servoActivationTime = std::chrono::system_clock::now();
 				triggerServoActive = true;
+				hardWareMutex->lock();
+				*startShooting = false;
+				hardWareMutex->unlock();
 			}
 		}
 
