@@ -156,6 +156,7 @@ int main(int argc, char** argv)
 		//Reset gun position
 		if (state == ProgramState::RESET)
 		{
+			//Negative values center the gun
 			targetX = -1.0;
 			targetY = -1.0;
 
@@ -169,8 +170,8 @@ int main(int argc, char** argv)
 		{
 			if (targetConfirmed)
 			{
-				state = ProgramState::ELIMINATE;
 				startShooting = true;
+				state = ProgramState::ELIMINATE;
 			}
 		}
 		//Aim at the target if found
@@ -183,9 +184,8 @@ int main(int argc, char** argv)
 
 			if (shootingDone)
 			{
-				startShooting = false;
-				shootingDone = false;
 				state = ProgramState::RESET;
+				shootingDone = false;
 			}
 
 			hwMutex.unlock();
