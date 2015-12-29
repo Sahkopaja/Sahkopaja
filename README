@@ -3,5 +3,7 @@
 
 2. Compilation (for example)
     g++ -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_photo -lopencv_video -ljsoncpp -stdc++11 -pthread main.cpp camera.cpp motiontrack.cpp hardware.cpp
-3. Problems
-    In the case the camera fails to load check that you have the correct kernel module installed and loaded.
+
+3. Config
+    To configurate the program, edit the file preferences.json or pass an alternative preference file to the program as the only command line parameter.
+    The values in the default preferences.json should be relatively sane.
