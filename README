@@ -1,5 +1,5 @@
 1. Dependencies
-	OpenCV 2, libjsoncpp
+	OpenCV 2, libjsoncpp, servoblaster
 
 2. Compilation (for example)
     g++ -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_photo -lopencv_video -ljsoncpp -stdc++11 -pthread main.cpp camera.cpp motiontrack.cpp hardware.cpp
